@@ -114,7 +114,7 @@ export function createWorld(random) {
     runTime: 0,
   };
   // Attract mode behind the title: a few slow rocks drifting by.
-  for (let i = 0; i < 5; i += 1) spawnAsteroid(state, 2, true);
+  for (let i = 0; i < 7; i += 1) spawnAsteroid(state, 2, true);
   return state;
 }
 
@@ -691,7 +691,7 @@ export function stepWorld(state, dt, cmd) {
   state.time += dt;
   if (state.phase === PHASE_TITLE) {
     stepAsteroids(state, dt);
-    if (state.asteroids.length < 5 && state.random.chance(dt * 0.2)) spawnAsteroid(state, 2, true);
+    if (state.asteroids.length < 7 && state.random.chance(dt * 0.2)) spawnAsteroid(state, 2, true);
     stepFx(state, dt);
     return events;
   }

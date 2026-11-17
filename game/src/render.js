@@ -132,7 +132,7 @@ export function createRenderer(canvas) {
     ctx.lineTo(-8, 16);
     ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle = def ? '#e9d5ff' : PALETTE.droneDark;
+    ctx.strokeStyle = def ? PALETTE.eliteLight : PALETTE.droneDark;
     ctx.lineWidth = 2;
     ctx.stroke();
     ctx.fillStyle = PALETTE.droneEye;
@@ -144,7 +144,7 @@ export function createRenderer(canvas) {
     ctx.arc(9.5, -1.5, 2, 0, TAU);
     ctx.fill();
     if (def) {
-      ctx.strokeStyle = '#e9d5ff';
+      ctx.strokeStyle = PALETTE.eliteLight;
       ctx.beginPath();
       ctx.moveTo(-18, -8);
       ctx.lineTo(-28, -14);
@@ -309,6 +309,17 @@ export function createRenderer(canvas) {
 
   function drawHud(state, view) {
     const p = state.player;
+    // Frosted panels behind each HUD cluster so the text stays readable over
+    // busy starfields, explosions and bright nebulae.
+    ctx.fillStyle = 'rgba(3, 7, 18, 0.55)';
+    roundRect(ctx, 12, 14, 280, 64, 10);
+    ctx.fill();
+    roundRect(ctx, FIELD.width / 2 - 110, 14, 220, 64, 10);
+    ctx.fill();
+    roundRect(ctx, FIELD.width - 242, 14, 230, 78, 10);
+    ctx.fill();
+    roundRect(ctx, 12, FIELD.height - 68, 360, 58, 10);
+    ctx.fill();
     ctx.textBaseline = 'alphabetic';
     ctx.fillStyle = PALETTE.hudText;
     ctx.textAlign = 'left';
@@ -368,19 +379,84 @@ export function createRenderer(canvas) {
     }
   }
 
+  /** Hero ship for the title screen: the player's skiff, drawn large with a
+   *  thrust flame and two glowing cores flanking it, so the title has a
+   *  subject instead of floating over an empty field. */
+  function drawHeroShip(x, y, s) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(s, s);
+    ctx.rotate(-Math.PI / 2);
+    ctx.shadowColor = PALETTE.thrust;
+    ctx.shadowBlur = 16;
+    ctx.fillStyle = PALETTE.thrust;
+    ctx.beginPath();
+    ctx.moveTo(-16, -6);
+    ctx.lineTo(-32, 0);
+    ctx.lineTo(-16, 6);
+    ctx.closePath();
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = PALETTE.hull;
+    ctx.beginPath();
+    ctx.moveTo(26, 0);
+    ctx.lineTo(-12, -15);
+    ctx.lineTo(-7, 0);
+    ctx.lineTo(-12, 15);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = PALETTE.hullDark;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = PALETTE.cockpit;
+    ctx.beginPath();
+    ctx.arc(4, 0, 6, 0, TAU);
+    ctx.fill();
+    ctx.restore();
+    for (const cx of [x - 150, x + 150]) {
+      ctx.save();
+      ctx.translate(cx, y);
+      ctx.shadowColor = PALETTE.core;
+      ctx.shadowBlur = 14;
+      ctx.fillStyle = PALETTE.core;
+      ctx.beginPath();
+      ctx.moveTo(0, -11);
+      ctx.lineTo(8, 0);
+      ctx.lineTo(0, 11);
+      ctx.lineTo(-8, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = '#fff3c4';
+      ctx.beginPath();
+      ctx.moveTo(0, -5);
+      ctx.lineTo(3.5, 0);
+      ctx.lineTo(0, 5);
+      ctx.lineTo(-3.5, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
   function drawTitle(state, view) {
-    ctx.fillStyle = 'rgba(4, 7, 16, 0.55)';
+    ctx.fillStyle = 'rgba(4, 7, 16, 0.68)';
     ctx.fillRect(0, 0, FIELD.width, FIELD.height);
     ctx.textAlign = 'center';
+    drawHeroShip(FIELD.width / 2, 116, 1.25);
     ctx.shadowColor = PALETTE.subtitle;
     ctx.shadowBlur = 34;
     ctx.fillStyle = PALETTE.title;
     ctx.font = 'bold 96px "Segoe UI", system-ui, sans-serif';
+    try { ctx.letterSpacing = '10px'; } catch { /* older canvas: no tracking */ }
     ctx.fillText('VOIDHARVEST', FIELD.width / 2, 250);
+    try { ctx.letterSpacing = '0px'; } catch { /* ignore */ }
     ctx.shadowBlur = 0;
     ctx.fillStyle = PALETTE.subtitle;
     ctx.font = 'bold 30px "Segoe UI", system-ui, sans-serif';
     ctx.fillText('— SALVAGE RUN —', FIELD.width / 2, 300);
+    ctx.fillStyle = PALETTE.core;
+    ctx.fillRect(FIELD.width / 2 - 90, 320, 180, 3);
     ctx.fillStyle = PALETTE.hudText;
     ctx.font = '19px "Segoe UI", system-ui, sans-serif';
     ctx.fillText('The belt is full of wrecked rocks and hungry drones.', FIELD.width / 2, 352);
@@ -405,8 +481,116 @@ export function createRenderer(canvas) {
     ctx.fillText('An original arcade game. No network, no downloads — just you and the belt.', FIELD.width / 2, 760);
   }
 
+  /** One small vector glyph per upgrade, drawn in salvage amber, so each card
+   *  reads at a glance instead of being two lines of text in a big empty box. */
+  function drawUpgradeIcon(id, cx, cy, r) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.strokeStyle = PALETTE.core;
+    ctx.fillStyle = PALETTE.core;
+    ctx.lineWidth = 4;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    if (id === 'twin-coils') {
+      ctx.rotate(-Math.PI / 4);
+      roundRect(ctx, -r, -r * 0.45, r * 1.7, r * 0.28, r * 0.14);
+      ctx.fill();
+      roundRect(ctx, -r * 0.7, r * 0.2, r * 1.7, r * 0.28, r * 0.14);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      roundRect(ctx, -r * 0.4, -r * 0.45 + r * 0.06, r * 0.7, r * 0.16, r * 0.08);
+      ctx.fill();
+    } else if (id === 'heavy-rounds') {
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 0.85, 0, TAU);
+      ctx.fill();
+      ctx.fillStyle = '#7a4d00';
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 0.4, 0, TAU);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(-r * 0.3, -r * 0.3, r * 0.14, 0, TAU);
+      ctx.fill();
+    } else if (id === 'rapid-cycler') {
+      for (let i = -1; i <= 1; i += 1) {
+        ctx.beginPath();
+        ctx.moveTo(i * r * 0.55 - r * 0.25, -r * 0.7);
+        ctx.lineTo(i * r * 0.55 + r * 0.35, 0);
+        ctx.lineTo(i * r * 0.55 - r * 0.25, r * 0.7);
+        ctx.stroke();
+      }
+    } else if (id === 'magnet-array') {
+      ctx.beginPath();
+      ctx.arc(0, -r * 0.1, r * 0.7, Math.PI, 0);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(-r * 0.7, -r * 0.1);
+      ctx.lineTo(-r * 0.7, r * 0.55);
+      ctx.moveTo(r * 0.7, -r * 0.1);
+      ctx.lineTo(r * 0.7, r * 0.55);
+      ctx.stroke();
+      ctx.fillStyle = PALETTE.hudText;
+      ctx.fillRect(-r * 0.9, r * 0.55, r * 0.4, r * 0.28);
+      ctx.fillRect(r * 0.5, r * 0.55, r * 0.4, r * 0.28);
+    } else if (id === 'ablative-plating') {
+      ctx.beginPath();
+      ctx.moveTo(0, -r * 0.9);
+      ctx.lineTo(r * 0.75, -r * 0.45);
+      ctx.lineTo(r * 0.6, r * 0.45);
+      ctx.lineTo(0, r * 0.9);
+      ctx.lineTo(-r * 0.6, r * 0.45);
+      ctx.lineTo(-r * 0.75, -r * 0.45);
+      ctx.closePath();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, -r * 0.45);
+      ctx.lineTo(r * 0.35, -r * 0.2);
+      ctx.lineTo(r * 0.28, r * 0.3);
+      ctx.lineTo(0, r * 0.55);
+      ctx.lineTo(-r * 0.28, r * 0.3);
+      ctx.lineTo(-r * 0.35, -r * 0.2);
+      ctx.closePath();
+      ctx.fill();
+    } else if (id === 'shield-capacitor') {
+      roundRect(ctx, -r * 0.7, -r * 0.55, r * 1.4, r * 1.1, 6);
+      ctx.stroke();
+      ctx.fillRect(-r * 0.7, -r * 0.55, r * 0.85, r * 1.1);
+      ctx.fillStyle = PALETTE.cardBack;
+      ctx.fillRect(r * 0.75, -r * 0.25, r * 0.2, r * 0.5);
+    } else if (id === 'ion-thrusters') {
+      ctx.beginPath();
+      ctx.moveTo(0, -r * 0.9);
+      ctx.quadraticCurveTo(r * 0.8, -r * 0.1, r * 0.4, r * 0.6);
+      ctx.quadraticCurveTo(0, r * 0.95, -r * 0.4, r * 0.6);
+      ctx.quadraticCurveTo(-r * 0.8, -r * 0.1, 0, -r * 0.9);
+      ctx.fill();
+    } else { // salvage-processor: the glowing core diamond
+      ctx.save();
+      ctx.shadowColor = PALETTE.core;
+      ctx.shadowBlur = 12;
+      ctx.beginPath();
+      ctx.moveTo(0, -r * 0.9);
+      ctx.lineTo(r * 0.7, 0);
+      ctx.lineTo(0, r * 0.9);
+      ctx.lineTo(-r * 0.7, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+      ctx.fillStyle = '#fff3c4';
+      ctx.beginPath();
+      ctx.moveTo(0, -r * 0.4);
+      ctx.lineTo(r * 0.3, 0);
+      ctx.lineTo(0, r * 0.4);
+      ctx.lineTo(-r * 0.3, 0);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
   function drawUpgrade(state, view) {
-    ctx.fillStyle = 'rgba(4, 7, 16, 0.72)';
+    ctx.fillStyle = 'rgba(4, 7, 16, 0.86)';
     ctx.fillRect(0, 0, FIELD.width, FIELD.height);
     ctx.textAlign = 'center';
     ctx.fillStyle = PALETTE.hudGood;
@@ -424,7 +608,7 @@ export function createRenderer(canvas) {
       const x = x0 + i * (CARDS.width + CARDS.gap);
       const y = CARDS.y;
       const hot = view.hoverCard === i;
-      ctx.fillStyle = PALETTE.cardBack;
+      ctx.fillStyle = hot ? 'rgba(22, 38, 68, 0.95)' : PALETTE.cardBack;
       roundRect(ctx, x, y, CARDS.width, CARDS.height, 14);
       ctx.fill();
       ctx.strokeStyle = hot ? PALETTE.cardEdgeHot : PALETTE.cardEdge;
@@ -433,10 +617,13 @@ export function createRenderer(canvas) {
       ctx.stroke();
       ctx.fillStyle = PALETTE.cardEdgeHot;
       ctx.font = 'bold 22px "Segoe UI", system-ui, sans-serif';
-      ctx.fillText(`[${i + 1}]`, x + CARDS.width / 2, y + 46);
+      ctx.fillText(`[${i + 1}]`, x + CARDS.width / 2, y + 44);
       ctx.fillStyle = PALETTE.title;
       ctx.font = 'bold 24px "Segoe UI", system-ui, sans-serif';
-      ctx.fillText(up.name, x + CARDS.width / 2, y + 92);
+      ctx.fillText(up.name, x + CARDS.width / 2, y + 90);
+      ctx.fillStyle = PALETTE.core;
+      ctx.fillRect(x + CARDS.width / 2 - 40, y + 106, 80, 3);
+      drawUpgradeIcon(up.id, x + CARDS.width / 2, y + 152, 26);
       ctx.fillStyle = PALETTE.hudText;
       ctx.font = '17px "Segoe UI", system-ui, sans-serif';
       const words = up.blurb.split(' ');
@@ -446,7 +633,7 @@ export function createRenderer(canvas) {
         if (ctx.measureText(test).width > CARDS.width - 48 && lines[lines.length - 1] !== '') lines.push(w);
         else lines[lines.length - 1] = test;
       }
-      lines.forEach((line, li) => ctx.fillText(line, x + CARDS.width / 2, y + 138 + li * 26));
+      lines.forEach((line, li) => ctx.fillText(line, x + CARDS.width / 2, y + 206 + li * 26));
     });
     ctx.fillStyle = PALETTE.hudDim;
     ctx.font = '16px "Segoe UI", system-ui, sans-serif';
@@ -454,7 +641,7 @@ export function createRenderer(canvas) {
   }
 
   function drawGameOver(state, view) {
-    ctx.fillStyle = 'rgba(10, 4, 10, 0.66)';
+    ctx.fillStyle = 'rgba(10, 4, 10, 0.74)';
     ctx.fillRect(0, 0, FIELD.width, FIELD.height);
     ctx.textAlign = 'center';
     ctx.fillStyle = PALETTE.hudBad;

@@ -7,7 +7,7 @@ import { FIELD, STEP } from './config.js';
 import { PHASE_OVER, PHASE_PLAY, PHASE_UPGRADE, applyUpgrade, startRun, stepWorld } from './world.js';
 
 const START_SECONDS = 5;
-const PLAY_SECONDS = 24;
+const PLAY_SECONDS = 40;
 const END_LIMIT_SECONDS = 600;
 
 /** Steer the ship: flee the nearest rock or drone inside `danger`, else chase the nearest core. */
@@ -123,4 +123,8 @@ export function stageShot(state, renderer, view, shot) {
   renderer.render(state, view);
   renderer.render(state, view);
   window.__shotReady = true;
+  // Scene census for picking the busiest seed when re-shooting.
+  document.title = `SHOT ${shot} wave=${state.wave} score=${state.score} combo=${state.combo} `
+    + `rocks=${state.asteroids.length} drones=${state.drones.length} `
+    + `bolts=${state.bolts.length} ebolts=${state.enemyBolts.length} cores=${state.pickups.length}`;
 }
